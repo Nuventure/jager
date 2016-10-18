@@ -5,7 +5,7 @@ module Jager
 
   # API_ENDPOINT = "https://api.cloud.net" its used for live data
 
-  API_ENDPOINT = "https://api.staging.cloud.net/" #now testing with staging data.
+  API_ENDPOINT = "https://api.staging.cloud.net" #now testing with staging data.
 
   class CloudNet
 
@@ -54,7 +54,7 @@ module Jager
         req.params["disk_size"] = options[:disk_size] 
         req.params["cpus"] = options[:cpus]
       end
-      return JSON.parse(resp.body)   
+      return {body: resp.body,status: resp.status}   
     end
 
     def edit_server server_id, options = {}
@@ -67,7 +67,7 @@ module Jager
         req.params["cpus"] = options[:cpus]            
         req.params["id"] = server_id
       end
-      return JSON.parse(resp.body)
+      return {body: resp.body,status: resp.status}
     end
 
     def destroy_server id
@@ -108,22 +108,25 @@ module Jager
           req.headers["Authorization"] = "Basic #{@authentication_string}" 
         end
 
-        return JSON.parse(full_data.body)
-
+        return { body: full_data.body, status: full_data.status, 
+                 total: full_data.headers["x-total"], page: full_data.headers["x-page"],
+                 per_page: full_data.headers["x-per-page"],
+                 total_pages: full_data.headers["x-total-pages"]
+               }
       end
 
       def member_request id, type
         resp = @connection.get("#{API_ENDPOINT}/#{type}/#{id}") do |req|
           req.headers["Authorization"] = "Basic #{@authentication_string}" 
         end
-        return JSON.parse(resp.body) 
+        return {body: resp.body,status: resp.status} 
       end
 
       def power_options server_id, option
         resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}/#{option}") do |req|
           req.headers["Authorization"] = "Basic #{@authentication_string}"
         end
-        return JSON.parse(resp.body)
+        return {body: resp.body,status: resp.status}
       end
   end 
 end

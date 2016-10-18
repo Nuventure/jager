@@ -2,6 +2,8 @@ require 'jager'
 require 'base64'
 require 'faraday'
 require 'spec_helper'
+require 'vcr'
+require 'support/vcr_setup'
 
 describe Jager::CloudNet do
 
@@ -35,9 +37,23 @@ describe Jager::CloudNet do
   end
 
   describe '#get_all_datacenters' do
-    subject {@obj.get_all_datacenters}
-    it 'retun error message for wrong request' do
-      expect(subject).to have_key("error")
+    context 'with invalid credentials' do
+      it 'returns authentication error message' do
+        VCR.use_cassette 'datacenters/all_with_invalid_creds' do
+          response = @obj.get_all_datacenters
+          expect(response[:status]).to eql 401 
+        end
+      end 
+    end
+
+    context 'with valid credentials' do
+      obj = Jager::CloudNet.setup ENV["CLOUDNET_EMAIL"], ENV["CLOUDNET_API_KEY"]
+      it 'returns all datacenters' do
+        VCR.use_cassette 'datacenters/all_with_valid_creds' do
+          response = obj.get_all_datacenters
+          expect(response[:status]).to eql 200
+        end
+      end
     end
   end
 
@@ -48,18 +64,43 @@ describe Jager::CloudNet do
         @obj.get_datacenter 1
       end
     end
-    context "with datacenter id" do 
-      subject {@obj.get_datacenter(1)}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
+    context "with datacenter id and invalid credentials" do 
+      it 'returns authentication error message' do
+        VCR.use_cassette 'datacenters/one_with_invalid_creds' do
+          response = @obj.get_datacenter 1
+          expect(response[:status]).to eql 401 
+        end
+      end 
+    end
+
+    context 'with datacenter id and invalid credentials' do
+      obj = Jager::CloudNet.setup ENV["CLOUDNET_EMAIL"], ENV["CLOUDNET_API_KEY"]
+      it 'returns datacenter' do
+        VCR.use_cassette 'datacenters/one_with_valid_creds' do
+          response = obj.get_datacenter 1
+          expect(response[:status]).to_not eql 401
+        end
       end
     end
   end
 
   describe '#get_all_servers' do
-    subject {@obj.get_all_servers}
-    it 'retun error message for wrong request' do
-      expect(subject).to have_key("error")
+    context 'with invalid credentials' do
+      it 'returns authentication error message' do
+        VCR.use_cassette 'servers/all_with_invalid_creds' do
+          response = @obj.get_all_servers
+          expect(response[:status]).to eql 401          
+        end
+      end   
+    end
+    context 'with valid credentials' do
+      obj = Jager::CloudNet.setup ENV["CLOUDNET_EMAIL"], ENV["CLOUDNET_API_KEY"]
+      it 'returns all servers' do
+        VCR.use_cassette 'servers/all_with_valid_creds' do
+          response = obj.get_all_servers
+          expect(response[:status]).to eql 200
+        end  
+      end
     end
   end
 
@@ -70,11 +111,22 @@ describe Jager::CloudNet do
         @obj.get_server 1
       end
     end
-    context "with server id" do 
-      subject {@obj.get_server(1)}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
+    context "with server id and invalid credentials" do 
+      it 'retuns authentication error message' do
+        VCR.use_cassette 'servers/one_with_invalid_creds' do
+          response = @obj.get_server 1
+          expect(response[:status]).to eql 401
+        end
       end
+    end
+    context 'with server id and valid credentials' do
+      obj = Jager::CloudNet.setup ENV["CLOUDNET_EMAIL"], ENV["CLOUDNET_API_KEY"]
+      it 'retuns server' do
+        VCR.use_cassette 'servers/one_with_valid_creds' do
+          response = obj.get_server 1
+          expect(response[:status]).to_not eql 401  
+        end
+      end 
     end
   end
 
@@ -85,87 +137,98 @@ describe Jager::CloudNet do
         @obj.create_server 1, {name: nil}
       end
     end
-    context "with template id" do 
-      subject {@obj.create_server(1, name: "testserver")}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
+    context "with template id and invalid credentials" do 
+      it 'returns authentication error message' do
+        VCR.use_cassette 'servers/create_server' do
+          response = @obj.create_server 1
+          expect(response[:status]).to eql 401
+        end 
+      end
+    end
+    context 'with valid template id and valid credentials' do
+      obj = Jager::CloudNet.setup ENV["CLOUDNET_EMAIL"], ENV["CLOUDNET_API_KEY"]
+      it 'creates one server' do
+        VCR.use_cassette 'servers/create_server' do
+          response = obj.create_server 1
+          expect(response[:status]).to eql 201
+        end 
       end
     end
   end
 
-  describe '#edit_server' do
-    context " without server id" do
-      it 'throw ArgumentError' do
-        expect(@obj).to receive(:edit_server).with(1,any_args)
-        @obj.edit_server 1, {name: nil, memory: nil, cpus: nil, disk_size: nil}
-      end
-    end
-    context "with server id" do 
-      subject {@obj.edit_server(1, name: "testserver_edited", memory: 1024, cpus: 2, disk_size: 20)}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
-      end
-    end
-  end
+  # describe '#edit_server' do
+  #   context " without server id" do
+  #     it 'throw ArgumentError' do
+  #       expect(@obj).to receive(:edit_server).with(1,any_args)
+  #       @obj.edit_server 1, {name: nil, memory: nil, cpus: nil, disk_size: nil}
+  #     end
+  #   end
+  #   context "with server id" do 
+  #     subject {@obj.edit_server(1, name: "testserver_edited", memory: 1024, cpus: 2, disk_size: 20)}
+  #     it 'retun error message for wrong request' do
+  #       expect(subject).to have_key("error") 
+  #     end
+  #   end
+  # end
 
-  describe '#destroy_server' do
-    context " without server id" do
-      it 'throw ArgumentError' do
-        expect(@obj).to receive(:destroy_server).with(1)
-        @obj.destroy_server 1
-      end
-    end
-    context "with server id" do 
-      subject {@obj.destroy_server(1)}
-      it 'retuns one Faraday response instance' do
-        expect(subject).to be_an_instance_of Faraday::Response
-      end
-    end
-  end
+  # describe '#destroy_server' do
+  #   context " without server id" do
+  #     it 'throw ArgumentError' do
+  #       expect(@obj).to receive(:destroy_server).with(1)
+  #       @obj.destroy_server 1
+  #     end
+  #   end
+  #   context "with server id" do 
+  #     subject {@obj.destroy_server(1)}
+  #     it 'retuns one Faraday response instance' do
+  #       expect(subject).to be_an_instance_of Faraday::Response
+  #     end
+  #   end
+  # end
 
-  describe '#reboot_server' do
-    context " without server id" do
-      it 'throw ArgumentError' do
-        expect(@obj).to receive(:reboot_server).with(1)
-        @obj.reboot_server 1
-      end
-    end
-    context "with server id" do 
-      subject {@obj.reboot_server(1)}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
-      end
-    end
-  end
+  # describe '#reboot_server' do
+  #   context " without server id" do
+  #     it 'throw ArgumentError' do
+  #       expect(@obj).to receive(:reboot_server).with(1)
+  #       @obj.reboot_server 1
+  #     end
+  #   end
+  #   context "with server id" do 
+  #     subject {@obj.reboot_server(1)}
+  #     it 'retun error message for wrong request' do
+  #       expect(subject).to have_key("error") 
+  #     end
+  #   end
+  # end
 
-  describe '#shutdown_server' do
-    context " without server id" do
-      it 'throw ArgumentError' do
-        expect(@obj).to receive(:shutdown_server).with(1)
-        @obj.shutdown_server 1
-      end
-    end
-    context "with server id" do 
-      subject {@obj.shutdown_server(1)}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
-      end
-    end
-  end
+  # describe '#shutdown_server' do
+  #   context " without server id" do
+  #     it 'throw ArgumentError' do
+  #       expect(@obj).to receive(:shutdown_server).with(1)
+  #       @obj.shutdown_server 1
+  #     end
+  #   end
+  #   context "with server id" do 
+  #     subject {@obj.shutdown_server(1)}
+  #     it 'retun error message for wrong request' do
+  #       expect(subject).to have_key("error") 
+  #     end
+  #   end
+  # end
 
 
-  describe '#startup_server' do
-    context " without server id" do
-      it 'throw ArgumentError' do
-        expect(@obj).to receive(:startup_server).with(1)
-        @obj.startup_server 1
-      end
-    end
-    context "with server id" do 
-      subject {@obj.startup_server(1)}
-      it 'retun error message for wrong request' do
-        expect(subject).to have_key("error") 
-      end
-    end
-  end
+  # describe '#startup_server' do
+  #   context " without server id" do
+  #     it 'throw ArgumentError' do
+  #       expect(@obj).to receive(:startup_server).with(1)
+  #       @obj.startup_server 1
+  #     end
+  #   end
+  #   context "with server id" do 
+  #     subject {@obj.startup_server(1)}
+  #     it 'retun error message for wrong request' do
+  #       expect(subject).to have_key("error") 
+  #     end
+  #   end
+  # end
 end
