@@ -19,6 +19,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.5.0)
     rspec-support (3.5.0)
+    vcr (3.0.3)
 
 PLATFORMS
   ruby
@@ -27,6 +28,7 @@ DEPENDENCIES
   faraday
   json
   rspec
+  vcr
 
 BUNDLED WITH
    1.11.2
