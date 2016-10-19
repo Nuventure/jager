@@ -74,6 +74,7 @@ module Jager
       resp = @connection.delete("#{API_ENDPOINT}/servers/#{id}") do |req|
         req.headers["Authorization"] = "Basic #{@authentication_string}"
       end
+      return {body: resp.body,status: resp.status}
     end
 
     #server power options
