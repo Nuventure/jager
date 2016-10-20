@@ -1,6 +1,9 @@
 require 'base64'
 require 'faraday'
 require 'json'
+require 'cloudnet/base'
+require '/jager/server'
+require 'jager/datacenter'
 module Jager
 
   # API_ENDPOINT = "https://api.cloud.net" its used for live data
@@ -22,108 +25,110 @@ module Jager
     end
 
     #datacenter requests
+    # class Datacenter < Base
+    #   def get_all_datacenters
+    #     return collection_request "datacenters"
+    #   end
 
-    def get_all_datacenters
-      return collection_request "datacenters"
-    end
-
-    def get_datacenter id
-      return member_request id, "datacenters"
-    end
+    #   def get_datacenter id
+    #     return member_request id, "datacenters"
+    #   end
+    # end
 
     #server requests
+  #   class Server
+  #     def get_all_servers
+  #       return collection_request "servers"
+  #     end
 
-    def get_all_servers
-      return collection_request "servers"
-    end
+  #     def get_server id
+  #       return member_request id, "servers"
+  #     end
 
-    def get_server id
-      return member_request id, "servers"
-    end
+  #     # server CRUD actions
 
-    # server CRUD actions
+  #     def create_server template_id, options = {}
+  #       options = {name: nil, hostname: nil, memory: 1024, disk_size: 20, cpus: 2}.merge(options)
+  #       resp = @connection.post("#{API_ENDPOINT}/servers") do |req|
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
+  #         req.params["template_id"] = template_id 
+  #         req.params["name"] = options[:name]
+  #         req.params["hostname"] = options[:hostname] 
+  #         req.params["memory"] = options[:memory] 
+  #         req.params["disk_size"] = options[:disk_size] 
+  #         req.params["cpus"] = options[:cpus]
+  #       end
+  #       return JSON.parse(resp.body)   
+  #     end
 
-    def create_server template_id, options = {}
-      options = {name: nil, hostname: nil, memory: 1024, disk_size: 20, cpus: 2}.merge(options)
-      resp = @connection.post("#{API_ENDPOINT}/servers") do |req|
-        req.headers["Authorization"] = "Basic #{@authentication_string}"
-        req.params["template_id"] = template_id 
-        req.params["name"] = options[:name]
-        req.params["hostname"] = options[:hostname] 
-        req.params["memory"] = options[:memory] 
-        req.params["disk_size"] = options[:disk_size] 
-        req.params["cpus"] = options[:cpus]
-      end
-      return JSON.parse(resp.body)   
-    end
+  #     def edit_server server_id, options = {}
+  #       options = {template_id: nil, memory: nil, cpus: nil, disk_size: nil}.merge(options)
+  #       resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}") do |req|
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
+  #         req.params["template_id"] = options[:template_id] 
+  #         req.params["memory"] = options[:memory]           
+  #         req.params["disk_size"] = options[:disk_size]     
+  #         req.params["cpus"] = options[:cpus]            
+  #         req.params["id"] = server_id
+  #       end
+  #       return JSON.parse(resp.body)
+  #     end
 
-    def edit_server server_id, options = {}
-      options = {template_id: nil, memory: nil, cpus: nil, disk_size: nil}.merge(options)
-      resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}") do |req|
-        req.headers["Authorization"] = "Basic #{@authentication_string}"
-        req.params["template_id"] = options[:template_id] 
-        req.params["memory"] = options[:memory]           
-        req.params["disk_size"] = options[:disk_size]     
-        req.params["cpus"] = options[:cpus]            
-        req.params["id"] = server_id
-      end
-      return JSON.parse(resp.body)
-    end
+  #     def destroy_server id
+  #       resp = @connection.delete("#{API_ENDPOINT}/servers/#{id}") do |req|
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
+  #       end
+  #     end
 
-    def destroy_server id
-      resp = @connection.delete("#{API_ENDPOINT}/servers/#{id}") do |req|
-        req.headers["Authorization"] = "Basic #{@authentication_string}"
-      end
-    end
+  #     #server power options
 
-    #server power options
+  #     def reboot_server id
+  #       return power_options id,"reboot"
+  #     end
 
-    def reboot_server id
-      return power_options id,"reboot"
-    end
+  #     def shutdown_server id
+  #       return power_options id,"shutdown"
+  #     end
 
-    def shutdown_server id
-      return power_options id,"shutdown"
-    end
+  #     def startup_server id
+  #       return power_options id,"startup"
+  #     end
+  #   end
 
-    def startup_server id
-      return power_options id,"startup"
-    end
+  #   private
 
-    private
-
-      def collection_request type
-        #send intial request for getting full response header and use total number of results to get all data in one request.
+  #     def collection_request type
+  #       #send intial request for getting full response header and use total number of results to get all data in one request.
         
-        resp = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
-          req.headers["Authorization"] = "Basic #{@authentication_string}" 
-        end
-        total_results = resp.headers["x-total"]
+  #       resp = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}" 
+  #       end
+  #       total_results = resp.headers["x-total"]
         
-        #get all in one request
+  #       #get all in one request
 
-        full_data = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
-          req.params["per_page"] = total_results.to_i
-          req.params["pege"] = 1
-          req.headers["Authorization"] = "Basic #{@authentication_string}" 
-        end
+  #       full_data = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
+  #         req.params["per_page"] = total_results.to_i
+  #         req.params["pege"] = 1
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}" 
+  #       end
 
-        return JSON.parse(full_data.body)
+  #       return JSON.parse(full_data.body)
 
-      end
+  #     end
 
-      def member_request id, type
-        resp = @connection.get("#{API_ENDPOINT}/#{type}/#{id}") do |req|
-          req.headers["Authorization"] = "Basic #{@authentication_string}" 
-        end
-        return JSON.parse(resp.body) 
-      end
+  #     def member_request id, type
+  #       resp = @connection.get("#{API_ENDPOINT}/#{type}/#{id}") do |req|
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}" 
+  #       end
+  #       return JSON.parse(resp.body) 
+  #     end
 
-      def power_options server_id, option
-        resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}/#{option}") do |req|
-          req.headers["Authorization"] = "Basic #{@authentication_string}"
-        end
-        return JSON.parse(resp.body)
-      end
+  #     def power_options server_id, option
+  #       resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}/#{option}") do |req|
+  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
+  #       end
+  #       return JSON.parse(resp.body)
+  #     end
   end 
 end
