@@ -1,9 +1,7 @@
 require 'base64'
 require 'faraday'
 require 'json'
-require 'cloudnet/base'
-require '/jager/server'
-require 'jager/datacenter'
+
 module Jager
 
   # API_ENDPOINT = "https://api.cloud.net" its used for live data
@@ -11,7 +9,9 @@ module Jager
   API_ENDPOINT = "https://api.staging.cloud.net/" #now testing with staging data.
 
   class CloudNet
-
+    
+    attr_accessor :authentication_string
+    
     def initialize auth_string
       @authentication_string = auth_string
       @connection = Faraday.new(API_ENDPOINT,{ssl: {verify: false}}) #its only for staging account
@@ -24,111 +24,120 @@ module Jager
       return self.new(auth_string) #creates new object of CloudNet for accessing all instance methods availabele 
     end
 
-    #datacenter requests
-    # class Datacenter < Base
-    #   def get_all_datacenters
-    #     return collection_request "datacenters"
-    #   end
+    class Datacenter < Jager::CloudNet
+      
+      def initialize obj
+        super obj.authentication_string
+      end
+      
+      def get_all_datacenters
+        return collection_request "datacenters"
+      end
 
-    #   def get_datacenter id
-    #     return member_request id, "datacenters"
-    #   end
-    # end
+      def get_datacenter id
+        return member_request id, "datacenters"
+      end
+    end
 
-    #server requests
-  #   class Server
-  #     def get_all_servers
-  #       return collection_request "servers"
-  #     end
+    class Server < Jager::CloudNet
+      
+      def initialize obj
+        super obj.authentication_string
+      end
 
-  #     def get_server id
-  #       return member_request id, "servers"
-  #     end
+      def get_all_servers
+        return collection_request "servers"
+      end
 
-  #     # server CRUD actions
+      def get_server id
+        return member_request id, "servers"
+      end
 
-  #     def create_server template_id, options = {}
-  #       options = {name: nil, hostname: nil, memory: 1024, disk_size: 20, cpus: 2}.merge(options)
-  #       resp = @connection.post("#{API_ENDPOINT}/servers") do |req|
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
-  #         req.params["template_id"] = template_id 
-  #         req.params["name"] = options[:name]
-  #         req.params["hostname"] = options[:hostname] 
-  #         req.params["memory"] = options[:memory] 
-  #         req.params["disk_size"] = options[:disk_size] 
-  #         req.params["cpus"] = options[:cpus]
-  #       end
-  #       return JSON.parse(resp.body)   
-  #     end
+      # server CRUD actions
 
-  #     def edit_server server_id, options = {}
-  #       options = {template_id: nil, memory: nil, cpus: nil, disk_size: nil}.merge(options)
-  #       resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}") do |req|
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
-  #         req.params["template_id"] = options[:template_id] 
-  #         req.params["memory"] = options[:memory]           
-  #         req.params["disk_size"] = options[:disk_size]     
-  #         req.params["cpus"] = options[:cpus]            
-  #         req.params["id"] = server_id
-  #       end
-  #       return JSON.parse(resp.body)
-  #     end
+      def create_server template_id, options = {}
+        options = {name: nil, hostname: nil, memory: 1024, disk_size: 20, cpus: 2}.merge(options)
+        resp = @connection.post("#{API_ENDPOINT}/servers") do |req|
+          req.headers["Authorization"] = "Basic #{@authentication_string}"
+          req.params["template_id"] = template_id 
+          req.params["name"] = options[:name]
+          req.params["hostname"] = options[:hostname] 
+          req.params["memory"] = options[:memory] 
+          req.params["disk_size"] = options[:disk_size] 
+          req.params["cpus"] = options[:cpus]
+        end
+        return JSON.parse(resp.body)   
+      end
 
-  #     def destroy_server id
-  #       resp = @connection.delete("#{API_ENDPOINT}/servers/#{id}") do |req|
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
-  #       end
-  #     end
+      def edit_server server_id, options = {}
+        options = {template_id: nil, memory: nil, cpus: nil, disk_size: nil}.merge(options)
+        resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}") do |req|
+          req.headers["Authorization"] = "Basic #{@authentication_string}"
+          req.params["template_id"] = options[:template_id] 
+          req.params["memory"] = options[:memory]           
+          req.params["disk_size"] = options[:disk_size]     
+          req.params["cpus"] = options[:cpus]            
+          req.params["id"] = server_id
+        end
+        return JSON.parse(resp.body)
+      end
 
-  #     #server power options
+      def destroy_server id
+        resp = @connection.delete("#{API_ENDPOINT}/servers/#{id}") do |req|
+          req.headers["Authorization"] = "Basic #{@authentication_string}"
+        end
+      end
 
-  #     def reboot_server id
-  #       return power_options id,"reboot"
-  #     end
+      #server power options
 
-  #     def shutdown_server id
-  #       return power_options id,"shutdown"
-  #     end
+      def reboot_server id
+        return power_options id,"reboot"
+      end
 
-  #     def startup_server id
-  #       return power_options id,"startup"
-  #     end
-  #   end
+      def shutdown_server id
+        return power_options id,"shutdown"
+      end
 
-  #   private
+      def startup_server id
+        return power_options id,"startup"
+      end
+    end
 
-  #     def collection_request type
-  #       #send intial request for getting full response header and use total number of results to get all data in one request.
+    protected
+
+      def collection_request type
+        #send intial request for getting full response header and use total 
+        #number of results to get all data in one request.
         
-  #       resp = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}" 
-  #       end
-  #       total_results = resp.headers["x-total"]
+        resp = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
+          req.headers["Authorization"] = "Basic #{@authentication_string}" 
+        end
+        total_results = resp.headers["x-total"]
         
-  #       #get all in one request
+        #get all in one request
 
-  #       full_data = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
-  #         req.params["per_page"] = total_results.to_i
-  #         req.params["pege"] = 1
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}" 
-  #       end
+        full_data = @connection.get("#{API_ENDPOINT}/#{type}") do |req|
+          req.params["per_page"] = total_results.to_i
+          req.params["pege"] = 1
+          req.headers["Authorization"] = "Basic #{@authentication_string}" 
+        end
 
-  #       return JSON.parse(full_data.body)
+        return JSON.parse(full_data.body)
 
-  #     end
+      end
 
-  #     def member_request id, type
-  #       resp = @connection.get("#{API_ENDPOINT}/#{type}/#{id}") do |req|
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}" 
-  #       end
-  #       return JSON.parse(resp.body) 
-  #     end
+      def member_request id, type
+        resp = @connection.get("#{API_ENDPOINT}/#{type}/#{id}") do |req|
+          req.headers["Authorization"] = "Basic #{@authentication_string}" 
+        end
+        return JSON.parse(resp.body) 
+      end
 
-  #     def power_options server_id, option
-  #       resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}/#{option}") do |req|
-  #         req.headers["Authorization"] = "Basic #{@authentication_string}"
-  #       end
-  #       return JSON.parse(resp.body)
-  #     end
+      def power_options server_id, option
+        resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}/#{option}") do |req|
+          req.headers["Authorization"] = "Basic #{@authentication_string}"
+        end
+        return JSON.parse(resp.body)
+      end
   end 
 end
