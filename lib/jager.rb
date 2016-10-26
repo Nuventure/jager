@@ -1,6 +1,7 @@
 require 'base64'
 require 'faraday'
 require 'json'
+require 'jager/datacenters'
 
 module Jager
 
@@ -24,20 +25,20 @@ module Jager
       return self.new(auth_string) #creates new object of CloudNet for accessing all instance methods availabele 
     end
 
-    class Datacenter < Jager::CloudNet
+    # class Datacenter < Jager::CloudNet
       
-      def initialize obj
-        super obj.authentication_string
-      end
+    #   def initialize obj
+    #     super obj.authentication_string
+    #   end
       
-      def get_all_datacenters
-        return collection_request "datacenters"
-      end
+    #   def get_all_datacenters
+    #     return collection_request "datacenters"
+    #   end
 
-      def get_datacenter id
-        return member_request id, "datacenters"
-      end
-    end
+    #   def get_datacenter id
+    #     return member_request id, "datacenters"
+    #   end
+    # end
 
     class Server < Jager::CloudNet
       
