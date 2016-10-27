@@ -1,6 +1,11 @@
-module jager
+module Jager
 
   class Base
+
+    def initialize obj
+      @connection = obj.connection
+      @authentication_string = obj.authentication_string
+    end
 
     protected
 

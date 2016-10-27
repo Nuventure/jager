@@ -1,10 +1,9 @@
 module Jager
-  class Datacenter < Jager::CloudNet
-        
+
+  class Datacenter < Jager::Base
     def initialize obj
-      super obj.authentication_string
-    end
-    
+      super obj
+    end    
     def get_all_datacenters
       return collection_request "datacenters"
     end
