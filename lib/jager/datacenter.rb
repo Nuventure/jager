@@ -1,14 +1,14 @@
 module Jager
 
-  class Datacenter < Jager::Base
+  class Datacenter < Base
     def initialize obj
       super obj
     end    
-    def get_all_datacenters
+    def list
       return collection_request "datacenters"
     end
 
-    def get_datacenter id
+    def show id
       return member_request id, "datacenters"
     end
   end

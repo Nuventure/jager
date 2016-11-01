@@ -1,21 +1,22 @@
 module Jager
-  class Server < Jager::Base
+  class Server < Base
 
     def initialize obj
       super obj
     end
     
-    def get_all_servers
-      return collection_request "servers"
+    def list
+      # return collection_request "servers"
+      request(:get, "/servers")
     end
 
-    def get_server id
+    def show id
       return member_request id, "servers"
     end
 
     # server CRUD actions
 
-    def create_server template_id, options = {}
+    def create template_id, options = {}
       options = {name: nil, hostname: nil, memory: 1024, disk_size: 20, cpus: 2}.merge(options)
       resp = @connection.post("#{API_ENDPOINT}/servers") do |req|
         req.headers["Authorization"] = "Basic #{@authentication_string}"
@@ -29,7 +30,7 @@ module Jager
       return JSON.parse(resp.body)   
     end
 
-    def edit_server server_id, options = {}
+    def edit server_id, options = {}
       options = {template_id: nil, memory: nil, cpus: nil, disk_size: nil}.merge(options)
       resp = @connection.put("#{API_ENDPOINT}/servers/#{server_id}") do |req|
         req.headers["Authorization"] = "Basic #{@authentication_string}"
@@ -42,7 +43,7 @@ module Jager
       return JSON.parse(resp.body)
     end
 
-    def destroy_server id
+    def destroy id
       resp = @connection.delete("#{API_ENDPOINT}/servers/#{id}") do |req|
         req.headers["Authorization"] = "Basic #{@authentication_string}"
       end
@@ -50,15 +51,15 @@ module Jager
 
     #server power options
 
-    def reboot_server id
+    def reboot id
       return power_options id,"reboot"
     end
 
-    def shutdown_server id
+    def shutdown id
       return power_options id,"shutdown"
     end
 
-    def startup_server id
+    def startup id
       return power_options id,"startup"
     end
   end
