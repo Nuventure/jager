@@ -2,9 +2,12 @@ module Jager
 
   class Base
 
-    def initialize obj
-      @connection = obj.connection
-      @authentication_string = obj.authentication_string
+    def request method, path, options = {}
+      connection = Faraday.new(url: API_ENDPOINT ,{ssl: {verify: false}}) do |c|
+        c.headers["Authorization"] = "Basic #{Jager.authentication_string}"  
+        c.params = options     
+      end
+      response = connection.send(method,path)
     end
 
     protected
